@@ -12,7 +12,7 @@ import numpy as np
 
 # Configuración FRED
 USE_FRED = True
-FRED_API_KEY = "a4fc0b370ee5f473f45757f776effd3e"
+FRED_API_KEY = "xxxxxxxxxxxxxxxxxxxx"
 
 if USE_FRED:
     from fredapi import Fred
@@ -405,4 +405,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
