@@ -1,9 +1,3 @@
-"""
-Professional Investment Hub Dashboard - V12.0 OPTIMIZED
-Sistema integrado de análisis fundamental y técnico para inversores profesionales
-Versión optimizada con Market Cap y mejoras de rendimiento
-"""
-
 import pandas as pd
 import numpy as np
 import dash
@@ -1561,4 +1555,5 @@ class ProfessionalInvestmentHub:
 if __name__ == "__main__":
     hub = ProfessionalInvestmentHub()
     # Escuchar en todas las interfaces para que sea accesible externamente (LAN)
+
     hub.app.run(debug=False, host="0.0.0.0", port=8050)
