@@ -1,9 +1,3 @@
-"""
-Sistema Profesional de Trading Cuantitativo v12.0
-Implementación con Machine Learning, Clustering y Análisis Cuantitativo Avanzado
-Mejoras estéticas y funcionales para una experiencia profesional
-"""
-
 import os
 import numpy as np
 import pandas as pd
@@ -2967,4 +2961,5 @@ if __name__ == "__main__":
         dashboard.app.run(debug=False, host="0.0.0.0", port=8051)
     except Exception as e:
         print(f"❌ Error: {e}")
+
         input("Presiona Enter para salir...")
