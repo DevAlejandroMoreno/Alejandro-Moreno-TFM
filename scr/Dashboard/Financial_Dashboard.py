@@ -1,8 +1,3 @@
-"""
-Sistema Análisis Fundamental
-Implementación con Machine Learning, Clustering y Análisis Cuantitativo Avanzado
-"""
-
 import dash
 from dash import dcc, html, Input, Output, callback, State, dash_table
 import plotly.graph_objs as go
@@ -2140,4 +2135,5 @@ def format_value(value, format_type):
         return "N/A"
 
 if __name__ == '__main__':
+
     app.run(debug=False, host="0.0.0.0", port=8052)
