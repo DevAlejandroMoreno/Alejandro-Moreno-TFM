@@ -5,7 +5,7 @@ import warnings
 from datetime import datetime, timedelta
 import gc
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, IsolationForest
 from sklearn.preprocessing import StandardScaler, RobustScaler, MinMaxScaler
 from sklearn.metrics import mean_absolute_percentage_error, r2_score
@@ -23,6 +23,8 @@ from tensorflow.keras import layers, Model, Input
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# NUEVAS IMPORTACIONES DEL SISTEMA ML AVANZADO
 from typing import Dict, List, Tuple, Optional, Any, Union
 import logging
 import json
@@ -1630,106 +1632,152 @@ class ProfessionalValuationSystem:
         }
     
     def comparable_valuation(self, company_data):
-        """Comparable company analysis using peers"""
+        """Comparable company analysis using peers - ENHANCED DEBUG VERSION WITH CORRECT NAMES"""
         ticker = company_data['ticker']
         hist_df = company_data['historical']
         info = company_data['info']
+        
+        print(f"DEBUG: Starting comparable valuation for {ticker}")
         
         # Get peer companies
         sector = info.get('zacks_x_sector_desc', '')
         industry = info.get('zacks_x_ind_desc', '')
         
+        print(f"DEBUG: {ticker} - Sector: {sector}, Industry: {industry}")
+        
         peers = []
         if industry and industry in self.industry_mapping:
             peers = [p for p in self.industry_mapping[industry] if p != ticker][:20]
+            print(f"DEBUG: Found {len(peers)} industry peers for {ticker}")
         elif sector and sector in self.sector_mapping:
             peers = [p for p in self.sector_mapping[sector] if p != ticker][:30]
+            print(f"DEBUG: Found {len(peers)} sector peers for {ticker}")
         
         if not peers:
             # Use statistical similarity
             peers = self.find_statistical_peers(company_data)
+            print(f"DEBUG: Found {len(peers)} statistical peers for {ticker}")
         
-        # Collect peer multiples
+        if not peers:
+            print(f"DEBUG: No peers found for {ticker}")
+            return None
+        
+        # Collect peer multiples - FIXED: usar nombres exactos que espera el dashboard
         peer_multiples = {
-            'P/E': [],
-            'EV/EBITDA': [],
-            'P/B': [],
-            'P/S': [],
-            'EV/Sales': []
+            'P/E': [],           # Nombres exactos del dashboard
+            'EV/EBITDA': [],     
+            'P/B': [],           
+            'P/S': [],           
+            'EV/Sales': []       
         }
         
+        peers_processed = 0
         for peer in peers:
             try:
-                peer_hist = pd.read_parquet(self.HISTORICAL_PATH / f"{peer}.parquet")
-                if not peer_hist.empty:
-                    latest = peer_hist.iloc[-1]
+                peer_file = self.HISTORICAL_PATH / f"{peer}.parquet"
+                if not peer_file.exists():
+                    continue
                     
-                    pe = latest.get('P/E', np.nan)
-                    if not pd.isna(pe) and 0 < pe < 100:
-                        peer_multiples['P/E'].append(pe)
+                peer_hist = pd.read_parquet(peer_file)
+                if peer_hist.empty:
+                    continue
                     
-                    ev_ebitda = latest.get('EV/EBITDA', np.nan)
-                    if not pd.isna(ev_ebitda) and 0 < ev_ebitda < 50:
-                        peer_multiples['EV/EBITDA'].append(ev_ebitda)
+                peers_processed += 1
+                latest = peer_hist.iloc[-1]
+                
+                # P/E
+                pe = latest.get('P/E', np.nan)
+                if not pd.isna(pe) and 0 < pe < 100:
+                    peer_multiples['P/E'].append(pe)
+                
+                # EV/EBITDA
+                ev_ebitda = latest.get('EV/EBITDA', np.nan)
+                if not pd.isna(ev_ebitda) and 0 < ev_ebitda < 50:
+                    peer_multiples['EV/EBITDA'].append(ev_ebitda)
+                
+                # P/B
+                pb = latest.get('P/B', np.nan)
+                if not pd.isna(pb) and 0 < pb < 20:
+                    peer_multiples['P/B'].append(pb)
+                
+                # P/S
+                ps = latest.get('P/S', np.nan)
+                if not pd.isna(ps) and 0 < ps < 20:
+                    peer_multiples['P/S'].append(ps)
+                
+                # EV/Sales
+                ev_sales = latest.get('EV/Sales', np.nan)
+                if not pd.isna(ev_sales) and 0 < ev_sales < 20:
+                    peer_multiples['EV/Sales'].append(ev_sales)
                     
-                    pb = latest.get('P/B', np.nan)
-                    if not pd.isna(pb) and 0 < pb < 20:
-                        peer_multiples['P/B'].append(pb)
-                    
-                    ps = latest.get('P/S', np.nan)
-                    if not pd.isna(ps) and 0 < ps < 20:
-                        peer_multiples['P/S'].append(ps)
-                    
-                    ev_sales = latest.get('EV/Sales', np.nan)
-                    if not pd.isna(ev_sales) and 0 < ev_sales < 20:
-                        peer_multiples['EV/Sales'].append(ev_sales)
-            except:
+            except Exception as e:
+                print(f"DEBUG: Error processing peer {peer}: {e}")
                 continue
+        
+        print(f"DEBUG: {ticker} - Processed {peers_processed} peers")
+        for multiple, values in peer_multiples.items():
+            print(f"DEBUG: {ticker} - {multiple}: {len(values)} values")
         
         # Calculate target multiples (using median and IQR)
         valuations = {}
         latest = hist_df.iloc[-1]
         shares = latest.get('Shares Outstanding', 1)
         
+        multiples_calculated = 0
         for multiple, values in peer_multiples.items():
-            if len(values) >= 3:
+            if len(values) >= 3:  # Need at least 3 peers
                 median_multiple = np.median(values)
                 q1 = np.percentile(values, 25)
                 q3 = np.percentile(values, 75)
                 
+                print(f"DEBUG: {ticker} - Calculating {multiple} with {len(values)} peers, median: {median_multiple:.2f}")
+                
                 if multiple == 'P/E':
                     eps = latest.get('EPS - Earnings Per Share', 0)
                     if eps > 0:
-                        valuations['P_E'] = {  # Cambiado de 'P/E' a 'P_E'
+                        valuations['P/E'] = {  # FIXED: usar nombre exacto del dashboard
                             'median': median_multiple * eps,
                             'low': q1 * eps,
                             'high': q3 * eps,
-                            'multiple': median_multiple  # Añadido el múltiple
+                            'multiple': median_multiple
                         }
+                        multiples_calculated += 1
+                        print(f"DEBUG: {ticker} - P/E calculated: {median_multiple * eps:.2f}")
                 
                 elif multiple == 'P/B':
                     book_value = latest.get('Book Value Per Share', 0)
                     if book_value > 0:
-                        valuations['P_B'] = {  # Cambiado de 'P/B' a 'P_B'
+                        valuations['P/B'] = {  # FIXED: usar nombre exacto del dashboard
                             'median': median_multiple * book_value,
                             'low': q1 * book_value,
                             'high': q3 * book_value,
-                            'multiple': median_multiple  # Añadido el múltiple
+                            'multiple': median_multiple
                         }
+                        multiples_calculated += 1
+                        print(f"DEBUG: {ticker} - P/B calculated: {median_multiple * book_value:.2f}")
                 
                 elif multiple == 'P/S':
                     revenue_per_share = latest.get('Revenue/Share', 0)
+                    if revenue_per_share == 0 and 'Revenue' in latest and shares > 0:
+                        revenue_per_share = latest['Revenue'] / shares
                     if revenue_per_share > 0:
-                        valuations['P_S'] = {  # Cambiado de 'P/S' a 'P_S'
+                        valuations['P/S'] = {  # FIXED: usar nombre exacto del dashboard
                             'median': median_multiple * revenue_per_share,
                             'low': q1 * revenue_per_share,
                             'high': q3 * revenue_per_share,
-                            'multiple': median_multiple  # Añadido el múltiple
+                            'multiple': median_multiple
                         }
+                        multiples_calculated += 1
+                        print(f"DEBUG: {ticker} - P/S calculated: {median_multiple * revenue_per_share:.2f}")
                 
                 elif multiple == 'EV/EBITDA':
                     ebitda = latest.get('EBITDA', 0)
                     net_debt = latest.get('Net Debt', 0)
+                    if pd.isna(net_debt):
+                        total_debt = latest.get('Long Term Debt', 0)
+                        cash = latest.get('Cash On Hand', 0)
+                        net_debt = total_debt - cash
+                    
                     if ebitda > 0 and shares > 0:
                         ev = median_multiple * ebitda
                         equity_value = ev - net_debt
@@ -1737,16 +1785,23 @@ class ProfessionalValuationSystem:
                         ev_low = q1 * ebitda
                         ev_high = q3 * ebitda
                         
-                        valuations['EV_EBITDA'] = {  # Cambiado de 'EV/EBITDA' a 'EV_EBITDA'
+                        valuations['EV/EBITDA'] = {  # FIXED: usar nombre exacto del dashboard
                             'median': equity_value / shares,
                             'low': (ev_low - net_debt) / shares,
                             'high': (ev_high - net_debt) / shares,
-                            'multiple': median_multiple  # Añadido el múltiple
+                            'multiple': median_multiple
                         }
+                        multiples_calculated += 1
+                        print(f"DEBUG: {ticker} - EV/EBITDA calculated: {equity_value / shares:.2f}")
                 
                 elif multiple == 'EV/Sales':
                     revenue = latest.get('Revenue', 0)
                     net_debt = latest.get('Net Debt', 0)
+                    if pd.isna(net_debt):
+                        total_debt = latest.get('Long Term Debt', 0)
+                        cash = latest.get('Cash On Hand', 0)
+                        net_debt = total_debt - cash
+                    
                     if revenue > 0 and shares > 0:
                         ev = median_multiple * revenue
                         equity_value = ev - net_debt
@@ -1754,18 +1809,29 @@ class ProfessionalValuationSystem:
                         ev_low = q1 * revenue
                         ev_high = q3 * revenue
                         
-                        valuations['EV_Sales'] = {  # Cambiado de 'EV/Sales' a 'EV_Sales'
+                        valuations['EV/Sales'] = {  # FIXED: usar nombre exacto del dashboard
                             'median': equity_value / shares,
                             'low': (ev_low - net_debt) / shares,
                             'high': (ev_high - net_debt) / shares,
-                            'multiple': median_multiple  # Añadido el múltiple
+                            'multiple': median_multiple
                         }
+                        multiples_calculated += 1
+                        print(f"DEBUG: {ticker} - EV/Sales calculated: {equity_value / shares:.2f}")
         
-        return {
+        print(f"DEBUG: {ticker} - Total multiples calculated: {multiples_calculated}")
+        
+        if multiples_calculated == 0:
+            print(f"DEBUG: No multiples calculated for {ticker}")
+            return None
+        
+        result = {
             'method': 'Comparables',
             'valuations': valuations,
-            'peer_count': len(peers)
+            'peer_count': peers_processed
         }
+        
+        print(f"DEBUG: {ticker} - Returning comparables result with {len(valuations)} valuations")
+        return result
     
     def find_statistical_peers(self, company_data, n_peers=20):
         """Find peers using statistical characteristics"""
@@ -2039,7 +2105,7 @@ class ProfessionalValuationSystem:
             return ml_results
             
         except Exception as e:
-            self.logger.debug(f"Error in ML predictions for {ticker}: {e}")
+            print(f"Error in ML predictions for {ticker}: {e}")
             return None
     
     def comprehensive_valuation(self, ticker):
@@ -2152,8 +2218,8 @@ class ProfessionalValuationSystem:
         return results
     
     def generate_forecast_valuations(self):
-        """Generate valuations for all companies with forecasts - Sequential Processing"""
-        print("\n3. GENERATING COMPREHENSIVE VALUATIONS WITH ADVANCED ML")
+        """Generate valuations for all companies with forecasts - WITH PARALLELIZATION"""
+        print("\n3. GENERATING COMPREHENSIVE VALUATIONS WITH ADVANCED ML + PARALLELIZATION")
         print("-" * 50)
         
         # Inicializar sistema ML avanzado
@@ -2162,44 +2228,58 @@ class ProfessionalValuationSystem:
         
         all_valuations = []
         
-        # Process sequentially to avoid threading issues
+        # PARALELIZACIÓN AÑADIDA - Usar ThreadPoolExecutor para paralelizar el procesamiento
         total_tickers = len(self.available_tickers)
-        print(f"Processing {total_tickers} tickers sequentially...")
+        print(f"Processing {total_tickers} tickers with parallelization...")
         
         processed = 0
         errors = 0
         
-        for i, ticker in enumerate(self.available_tickers):
-            try:
-                # Progress indicator
-                if i % 100 == 0 or i < 50:
-                    progress = (i / total_tickers) * 100
-                    print(f"Progress: {i}/{total_tickers} ({progress:.1f}%) - Current: {ticker}")
-                
-                # Process ticker
-                result = self._robust_comprehensive_valuation(ticker)
-                
-                if result:
-                    all_valuations.append(result)
-                    processed += 1
-                else:
-                    errors += 1
-                
-                # Memory cleanup every 500 tickers
-                if i % 500 == 0:
-                    import gc
-                    gc.collect()
-                    
-            except KeyboardInterrupt:
-                print(f"\n⚠ Processing interrupted by user at ticker {i}: {ticker}")
-                break
-            except Exception as e:
-                errors += 1
-                if errors < 10:  # Only show first 10 errors
-                    print(f"⚠ Error processing {ticker}: {str(e)[:50]}...")
-                continue
+        # Determinar número óptimo de threads
+        n_workers = min(multiprocessing.cpu_count(), 8)  # Max 8 threads para evitar saturar I/O
+        print(f"Using {n_workers} parallel workers")
         
-        print(f"\n✓ Processing completed:")
+        # Procesar en lotes para manejar memoria
+        batch_size = 500  # Procesar 500 tickers por lote
+        
+        for i in range(0, total_tickers, batch_size):
+            batch_tickers = self.available_tickers[i:i+batch_size]
+            print(f"Processing batch {i//batch_size + 1}/{(total_tickers-1)//batch_size + 1}")
+            
+            # Usar ThreadPoolExecutor para paralelización
+            with ThreadPoolExecutor(max_workers=n_workers) as executor:
+                # Enviar trabajos
+                future_to_ticker = {
+                    executor.submit(self._robust_comprehensive_valuation, ticker): ticker 
+                    for ticker in batch_tickers
+                }
+                
+                # Recopilar resultados
+                for future in as_completed(future_to_ticker):
+                    ticker = future_to_ticker[future]
+                    try:
+                        result = future.result(timeout=120)  # 2 minutos timeout por ticker
+                        
+                        if result:
+                            all_valuations.append(result)
+                            processed += 1
+                        else:
+                            errors += 1
+                        
+                        # Progress indicator
+                        if (processed + errors) % 50 == 0:
+                            progress = ((processed + errors) / total_tickers) * 100
+                            print(f"Progress: {processed + errors}/{total_tickers} ({progress:.1f}%) - Successful: {processed}")
+                        
+                    except Exception as e:
+                        errors += 1
+                        print(f"⚠ Error processing {ticker}: {str(e)[:50]}...")
+                        continue
+            
+            # Memory cleanup after each batch
+            gc.collect()
+        
+        print(f"\n✓ Parallel processing completed:")
         print(f"  - Successfully processed: {processed}")
         print(f"  - Errors/Skipped: {errors}")
         print(f"  - Total processed: {processed + errors}")
@@ -2226,37 +2306,63 @@ class ProfessionalValuationSystem:
                 if 'dcf' in val:
                     row['DCF_Value'] = self._safe_get_numeric_value(val['dcf'].get('fair_value', 0))
                 
-                # COMPARABLES - Corregido para extraer múltiplos Y valoraciones
+                # COMPARABLES - FIXED: PRECIOS OBJETIVO, NO MÚLTIPLOS
                 if 'comparables' in val and isinstance(val['comparables'], dict):
+                    print(f"DEBUG: Processing comparables for {val.get('ticker', 'Unknown')}")
                     comp_data = val['comparables'].get('valuations', {})
+                    print(f"DEBUG: Comparable data keys: {list(comp_data.keys()) if comp_data else 'None'}")
+                    
                     if isinstance(comp_data, dict) and comp_data:
-                        comp_values = []  # Para valoraciones
+                        comp_values = []  # Para valoraciones (precios objetivo)
                         
-                        # Extraer cada múltiple individualmente
+                        # FIXED: Nombres exactos que espera el Dashboard (con los PRECIOS OBJETIVO)
+                        name_mapping = {
+                            'P/E': 'Comp_P/E',
+                            'P/B': 'Comp_P/B', 
+                            'P/S': 'Comp_P/S',
+                            'EV/EBITDA': 'Comp_EV/EBITDA',
+                            'EV/Sales': 'Comp_EV/Sales'
+                        }
+                        
+                        # Extraer PRECIOS OBJETIVO (no múltiplos) para el Dashboard
                         for multiple_name, multiple_data in comp_data.items():
-                            if isinstance(multiple_data, dict):
-                                # Extraer el múltiple (ratio)
+                            print(f"DEBUG: Processing multiple {multiple_name}: {multiple_data}")
+                            if isinstance(multiple_data, dict) and multiple_name in name_mapping:
+                                column_name = name_mapping[multiple_name]
+                                
+                                # FIXED: Guardar el PRECIO OBJETIVO (median), no el múltiplo
+                                if 'median' in multiple_data:
+                                    target_price = self._safe_get_numeric_value(multiple_data['median'])
+                                    print(f"DEBUG: Target price for {multiple_name}: {target_price}")
+                                    if target_price > 0:
+                                        row[column_name] = target_price  # Comp_P/E = precio objetivo, no múltiplo
+                                        comp_values.append(target_price)
+                                        print(f"DEBUG: Added {column_name} = {target_price} (target price)")
+                                
+                                # OPCIONAL: También guardar el múltiplo si se necesita para referencia
                                 if 'multiple' in multiple_data:
                                     multiple_val = self._safe_get_numeric_value(multiple_data['multiple'])
                                     if multiple_val > 0:
-                                        row[f'Comp_{multiple_name}'] = multiple_val
-                                
-                                # Extraer la valoración (precio objetivo)
-                                if 'median' in multiple_data:
-                                    median_val = self._safe_get_numeric_value(multiple_data['median'])
-                                    if median_val > 0:
-                                        row[f'Comp_{multiple_name}_Value'] = median_val
-                                        comp_values.append(median_val)
+                                        row[f'{column_name}_Multiple'] = multiple_val  # Para referencia
+                                        print(f"DEBUG: Added {column_name}_Multiple = {multiple_val} (for reference)")
                         
-                        # Promedio de todas las valoraciones válidas
+                        # Promedio de todas las valoraciones válidas (precios objetivo)
                         if comp_values:
                             row['Comp_Average'] = np.mean(comp_values)
                             row['Comp_Count'] = len(comp_values)
+                            print(f"DEBUG: Added Comp_Average = {np.mean(comp_values)} with {len(comp_values)} target prices")
+                        else:
+                            print(f"DEBUG: No target prices found")
                         
                         # Información adicional sobre peers
                         peer_count = val['comparables'].get('peer_count', 0)
                         if peer_count > 0:
                             row['Peer_Count'] = peer_count
+                            print(f"DEBUG: Added Peer_Count = {peer_count}")
+                    else:
+                        print(f"DEBUG: No valid comp_data")
+                else:
+                    print(f"DEBUG: No comparables found for {val.get('ticker', 'Unknown')}")
                 
                 if 'residual_income' in val:
                     row['RI_Value'] = self._safe_get_numeric_value(val['residual_income'].get('fair_value', 0))
@@ -2307,20 +2413,8 @@ class ProfessionalValuationSystem:
             print("⚠ Failed to create summary DataFrame")
             return False
     
-    def _safe_comprehensive_valuation(self, ticker):
-        """Safe wrapper for comprehensive valuation with robust error handling"""
-        try:
-            # Call the original method with data type validation
-            result = self._robust_comprehensive_valuation(ticker)
-            return result
-            
-        except Exception as e:
-            error_msg = str(e)[:50] if str(e) else "Unknown error"
-            print(f"⚠ Error processing {ticker}: {error_msg}...")
-            return None
-    
     def _robust_comprehensive_valuation(self, ticker):
-        """Robust comprehensive valuation with data type safety"""
+        """Robust comprehensive valuation with data type safety and parallelization support"""
         try:
             company_data = self.load_company_financials(ticker)
             
@@ -2343,12 +2437,19 @@ class ProfessionalValuationSystem:
             except Exception as e:
                 pass  # Skip DCF if it fails
             
-            # 2. Comparable Valuation with error handling
+            # 2. Comparable Valuation with error handling - ENHANCED DEBUG
             try:
                 comp_result = self.comparable_valuation(company_data)
+                print(f"DEBUG: {ticker} - Comparable result: {comp_result is not None}")
+                if comp_result:
+                    print(f"DEBUG: {ticker} - Comparable has {len(comp_result.get('valuations', {}))} valuations")
                 if comp_result and self._validate_valuation_result(comp_result):
                     results['comparables'] = comp_result
+                    print(f"DEBUG: {ticker} - Comparable result ACCEPTED")
+                else:
+                    print(f"DEBUG: {ticker} - Comparable result REJECTED")
             except Exception as e:
+                print(f"DEBUG: {ticker} - Comparable exception: {e}")
                 pass  # Skip comparables if it fails
             
             # 3. Residual Income Valuation with error handling
@@ -2470,7 +2571,7 @@ class ProfessionalValuationSystem:
             return False
     
     def _validate_valuation_result(self, result):
-        """Validate valuation result"""
+        """Validate valuation result - FIXED to accept comparables"""
         try:
             if not result or not isinstance(result, dict):
                 return False
@@ -2482,6 +2583,15 @@ class ProfessionalValuationSystem:
                     val = self._safe_get_numeric_value(result[key])
                     if val and val > 0 and np.isfinite(val):
                         return True
+            
+            # FIXED: Special validation for comparables
+            if result.get('method') == 'Comparables':
+                valuations = result.get('valuations', {})
+                if isinstance(valuations, dict) and len(valuations) > 0:
+                    # If we have at least one valuation, it's valid
+                    for multiple_data in valuations.values():
+                        if isinstance(multiple_data, dict) and 'median' in multiple_data:
+                            return True
             
             return False
         except:
@@ -2723,9 +2833,10 @@ if __name__ == "__main__":
         print("✓ Full audit trail available for ML models")
         print("✓ Anti-data leakage measures implemented")
         print("✓ Temporal validation and feature safety ensured")
+        print("✓ Parallelization implemented for faster processing")
+        print("✓ Comparable multiples (Comp_P_E, Comp_P_B, Comp_P_S, Comp_EV_EBITDA) fixed and included")
     else:
         print("\n❌ Analysis failed. Please check data availability.")
     
     # Clean memory
-
     gc.collect()
