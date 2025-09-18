@@ -1,0 +1,283 @@
+{
+  "verification_timestamp": "2025-09-15T18:33:35.214969",
+  "process_results": {
+    "P001_EXTRACCION_SCREENER": {
+      "process_name": "P001_EXTRACCION_SCREENER",
+      "process_description": "Extracción de Lista de Empresas",
+      "input_count": 0,
+      "output_count": 5537,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 68,
+      "temporal_coverage_days": 0,
+      "data_volume_mb": 1.52,
+      "success_indicators": {
+        "tickers_extraidos": 5537,
+        "sectores_cubiertos": 17,
+        "completitud_datos": 88.21472413513308,
+        "diversidad_sectorial": true
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Ticker_List\\screener.parquet"
+      ]
+    },
+    "P002_EXTRACCION_PRECIOS": {
+      "process_name": "P002_EXTRACCION_PRECIOS",
+      "process_description": "Extracción de Precios Históricos",
+      "input_count": 5279,
+      "output_count": 5279,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 6,
+      "temporal_coverage_days": 4148,
+      "data_volume_mb": 565.6,
+      "success_indicators": {
+        "archivos_precio": 5279,
+        "años_promedio_historia": 11.4,
+        "registros_por_ticker": 2856.0,
+        "calidad_temporal": 100.0
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Historical_Prices"
+      ]
+    },
+    "P003_EXTRACCION_FUNDAMENTALES": {
+      "process_name": "P003_EXTRACCION_FUNDAMENTALES",
+      "process_description": "Extracción de Datos Fundamentales",
+      "input_count": 5326,
+      "output_count": 10598,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 94,
+      "temporal_coverage_days": 3650,
+      "data_volume_mb": 357.59,
+      "success_indicators": {
+        "archivos_anuales": 5326,
+        "archivos_trimestrales": 5272,
+        "variables_fundamentales": 94,
+        "registros_promedio": 12.9,
+        "cobertura_completa": true
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data\\Anual",
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data\\Trimestral"
+      ]
+    },
+    "P004_EXTRACCION_MACRO": {
+      "process_name": "P004_EXTRACCION_MACRO",
+      "process_description": "Extracción de Datos Macroeconómicos",
+      "input_count": 1,
+      "output_count": 1,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 22,
+      "temporal_coverage_days": 0,
+      "data_volume_mb": 0.36,
+      "success_indicators": {
+        "indicadores_macro": 22,
+        "años_historia": 0.0,
+        "registros_temporales": 6659,
+        "completitud_datos": 100.0,
+        "cobertura_completa": "True"
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Macro_Data\\Macro_Data.parquet"
+      ]
+    },
+    "P005_ENRIQUECIMIENTO": {
+      "process_name": "P005_ENRIQUECIMIENTO",
+      "process_description": "Enriquecimiento con Ratios y Precios",
+      "input_count": 5326,
+      "output_count": 5326,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 64,
+      "temporal_coverage_days": 3650,
+      "data_volume_mb": 575.78,
+      "success_indicators": {
+        "archivos_procesados": 5326,
+        "tasa_retencion": 100.0,
+        "features_originales": 94,
+        "features_enriquecidas": 158,
+        "ratios_añadidos": 64,
+        "mejora_significativa": true
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data\\Anual",
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data_and_Ratios\\Anual"
+      ]
+    },
+    "P006_PREDICCIONES": {
+      "process_name": "P006_PREDICCIONES",
+      "process_description": "Generación de Predicciones",
+      "input_count": 5326,
+      "output_count": 5326,
+      "retention_rate": 100.0,
+      "quality_score": 86.7,
+      "features_added": 0,
+      "temporal_coverage_days": 730,
+      "data_volume_mb": 538.3,
+      "success_indicators": {
+        "archivos_prediccion": 5326,
+        "tasa_retencion": 100.0,
+        "variables_predichas": 162,
+        "horizonte_años": 2.0,
+        "predicciones_completas": true
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data_and_Ratios\\Anual",
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Forecast_Fundamental_Data_and_Ratios\\Anual"
+      ]
+    },
+    "P007_ANALISIS_TECNICO": {
+      "process_name": "P007_ANALISIS_TECNICO",
+      "process_description": "Análisis Técnico",
+      "input_count": 5543,
+      "output_count": 5543,
+      "retention_rate": 100.0,
+      "quality_score": 100,
+      "features_added": 12,
+      "temporal_coverage_days": 0,
+      "data_volume_mb": 0.36,
+      "success_indicators": {
+        "tickers_analizados": 5543,
+        "señales_generadas": 12,
+        "completitud_señales": 68.8,
+        "granularidades_temporales": 3,
+        "analisis_completo": "False"
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Results\\Technical_Data_Results.parquet"
+      ]
+    },
+    "P008_ANALISIS_FUNDAMENTAL": {
+      "process_name": "P008_ANALISIS_FUNDAMENTAL",
+      "process_description": "Análisis Fundamental y Valoración",
+      "input_count": 5151,
+      "output_count": 5151,
+      "retention_rate": 100.0,
+      "quality_score": 89.2,
+      "features_added": 56,
+      "temporal_coverage_days": 0,
+      "data_volume_mb": 1.12,
+      "success_indicators": {
+        "empresas_valoradas": 5151,
+        "modelos_valoracion": 56,
+        "completitud_valoraciones": 29.9,
+        "metodos_implementados": 4,
+        "valoracion_completa": "False"
+      },
+      "evidence_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Results\\Fundamental_Data_Results.parquet"
+      ]
+    }
+  },
+  "objective_evidence": {
+    "OBJ_001": {
+      "objective_id": "OBJ_001",
+      "contributing_processes": [
+        "P001_EXTRACCION_SCREENER",
+        "P008_ANALISIS_FUNDAMENTAL"
+      ],
+      "key_metrics": {
+        "empresas_iniciales": 5537,
+        "empresas_finales": 5151,
+        "tasa_retencion_global": 93.02871591114322
+      },
+      "evidence_summary": "Pipeline procesa 5151 empresas vs objetivo de 500",
+      "verification_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Results\\Fundamental_Data_Results.parquet"
+      ]
+    },
+    "OBJ_002": {
+      "objective_id": "OBJ_002",
+      "contributing_processes": [
+        "P003_EXTRACCION_FUNDAMENTALES",
+        "P005_ENRIQUECIMIENTO"
+      ],
+      "key_metrics": {
+        "variables_fundamentales": 94,
+        "ratios_adicionales": 64,
+        "total_variables": 158
+      },
+      "evidence_summary": "Sistema proporciona 94 variables fundamentales",
+      "verification_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data\\Anual",
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Fundamental_Data\\Trimestral"
+      ]
+    },
+    "OBJ_003": {
+      "objective_id": "OBJ_003",
+      "contributing_processes": [
+        "P006_PREDICCIONES",
+        "P008_ANALISIS_FUNDAMENTAL"
+      ],
+      "key_metrics": {
+        "empresas_con_predicciones": 5151,
+        "modelos_valoracion": 56,
+        "metodos_implementados": 4
+      },
+      "evidence_summary": "Sistema genera predicciones para 5151 empresas",
+      "verification_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Results\\Fundamental_Data_Results.parquet"
+      ]
+    },
+    "OBJ_004": {
+      "objective_id": "OBJ_004",
+      "contributing_processes": [
+        "P001_EXTRACCION_SCREENER",
+        "P002_EXTRACCION_PRECIOS",
+        "P003_EXTRACCION_FUNDAMENTALES",
+        "P004_EXTRACCION_MACRO",
+        "P005_ENRIQUECIMIENTO",
+        "P006_PREDICCIONES",
+        "P007_ANALISIS_TECNICO",
+        "P008_ANALISIS_FUNDAMENTAL"
+      ],
+      "key_metrics": {
+        "calidad_promedio": 96.9875,
+        "procesos_alta_calidad": 8,
+        "total_procesos": 8
+      },
+      "evidence_summary": "Calidad promedio del pipeline: 97.0%",
+      "verification_files": []
+    },
+    "OBJ_005": {
+      "objective_id": "OBJ_005",
+      "contributing_processes": [
+        "P001_EXTRACCION_SCREENER",
+        "P008_ANALISIS_FUNDAMENTAL"
+      ],
+      "key_metrics": {
+        "retencion_global": 93.02871591114322,
+        "empresas_iniciales": 5537,
+        "empresas_finales": 5151
+      },
+      "evidence_summary": "Retención global: 93.0% vs objetivo 80%",
+      "verification_files": []
+    },
+    "OBJ_006": {
+      "objective_id": "OBJ_006",
+      "contributing_processes": [
+        "P002_EXTRACCION_PRECIOS",
+        "P004_EXTRACCION_MACRO"
+      ],
+      "key_metrics": {
+        "años_precios": 11.356605065023956,
+        "años_macro": 0.0,
+        "cobertura_temporal_completa": true
+      },
+      "evidence_summary": "Cobertura temporal: 11.4 años",
+      "verification_files": [
+        "c:\\Users\\aleja\\Desktop\\project_root1\\data\\Historical_Prices"
+      ]
+    }
+  },
+  "summary_statistics": {
+    "total_processes": 8,
+    "successful_processes": 8,
+    "average_quality": 96.9875,
+    "total_data_volume_mb": 2040.6299999999997,
+    "final_companies_count": 5151
+  }
+}
